@@ -1,6 +1,5 @@
 package com.elparche.wallet.controller;
 
-import com.elparche.wallet.dto.TransaccionRequest;
 import com.elparche.wallet.dto.TransaccionResponse;
 import com.elparche.wallet.dto.WalletResponse;
 import com.elparche.wallet.service.WalletService;
@@ -9,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,14 +18,16 @@ import java.util.List;
 @RequestMapping("/api/wallet")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
-@Tag(name = "Wallet", description = "Endpoints para gestión de fichas y transacciones de los jugadores")
+@Tag(name = "Wallet", description = "Endpoints para consulta de fichas e historial de transacciones")
 public class WalletController {
 
     private final WalletService walletService;
 
     @Operation(
             summary = "Consultar saldo",
-            description = "Devuelve el saldo actual y el saldo en juego del jugador. Si el jugador no tiene wallet creado, lo crea automáticamente con 1000 fichas.",
+            description = "Devuelve el saldo actual y el saldo en juego del jugador. " +
+                    "Si el jugador no tiene wallet creado, lo crea automáticamente con 1000 fichas. " +
+                    "Las apuestas y ganancias llegan por Redis Streams desde los Room Servers.",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
     @ApiResponses(value = {
@@ -40,62 +40,9 @@ public class WalletController {
     }
 
     @Operation(
-            summary = "Registrar apuesta",
-            description = "Descuenta fichas del saldo del jugador y las mueve a saldo en juego. Falla si el jugador no tiene saldo suficiente.",
-            security = @SecurityRequirement(name = "Bearer Authentication")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Apuesta registrada exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Saldo insuficiente"),
-            @ApiResponse(responseCode = "401", description = "Token inválido o expirado")
-    })
-    @PostMapping("/apostar")
-    public ResponseEntity<WalletResponse> apostar(
-            @Valid @RequestBody TransaccionRequest request) {
-        try {
-            return ResponseEntity.ok(walletService.apostar(request));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(
-                    WalletResponse.builder()
-                            .mensaje(e.getMessage())
-                            .build()
-            );
-        }
-    }
-
-    @Operation(
-            summary = "Registrar ganancia",
-            description = "Acredita fichas al saldo del jugador cuando gana una partida.",
-            security = @SecurityRequirement(name = "Bearer Authentication")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Ganancia registrada exitosamente"),
-            @ApiResponse(responseCode = "401", description = "Token inválido o expirado")
-    })
-    @PostMapping("/ganar")
-    public ResponseEntity<WalletResponse> ganar(
-            @Valid @RequestBody TransaccionRequest request) {
-        return ResponseEntity.ok(walletService.registrarGanancia(request));
-    }
-
-    @Operation(
-            summary = "Devolver apuesta",
-            description = "Devuelve las fichas apostadas al jugador. Se usa cuando hay un fallo técnico o se cancela la partida.",
-            security = @SecurityRequirement(name = "Bearer Authentication")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Apuesta devuelta exitosamente"),
-            @ApiResponse(responseCode = "401", description = "Token inválido o expirado")
-    })
-    @PostMapping("/devolver")
-    public ResponseEntity<WalletResponse> devolver(
-            @Valid @RequestBody TransaccionRequest request) {
-        return ResponseEntity.ok(walletService.devolverApuesta(request));
-    }
-
-    @Operation(
             summary = "Historial de transacciones",
-            description = "Devuelve todas las transacciones del jugador ordenadas de más reciente a más antigua.",
+            description = "Devuelve todas las transacciones del jugador ordenadas de más reciente a más antigua. " +
+                    "Incluye apuestas, ganancias y devoluciones registradas por los Room Servers via Redis Streams.",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
     @ApiResponses(value = {
@@ -109,8 +56,9 @@ public class WalletController {
     }
 
     @Operation(
-            summary = "Historial por juego",
-            description = "Devuelve las transacciones del jugador filtradas por tipo de juego. Ejemplo: BLACKJACK, RULETA.",
+            summary = "Historial por tipo de juego",
+            description = "Devuelve las transacciones del jugador filtradas por tipo de juego. " +
+                    "Valores posibles: BLACKJACK, RULETA, UNO.",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
     @ApiResponses(value = {
