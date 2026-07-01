@@ -1,3 +1,37 @@
+server:
+  port: 8083
+
 spring:
   application:
     name: wallet-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/walletdb
+    username: elparche
+    password: elparche123
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6380
+
+  security:
+    user:
+      name: disabled
+      password: disabled
+
+jwt:
+  secret: elparche-casino-super-secret-key-2026-must-be-at-least-256-bits-long
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
