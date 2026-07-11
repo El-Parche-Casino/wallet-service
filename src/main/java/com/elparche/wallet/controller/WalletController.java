@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/wallet")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Wallet", description = "Endpoints para consulta de fichas e historial de transacciones")
 public class WalletController {
 
