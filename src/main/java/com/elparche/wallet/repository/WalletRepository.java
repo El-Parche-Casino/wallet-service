@@ -2,6 +2,7 @@ package com.elparche.wallet.repository;
 
 import com.elparche.wallet.model.Wallet;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -12,4 +13,7 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
     Optional<Wallet> findByUsername(String username);
 
     Boolean existsByUsername(String username);
+
+    @Query("SELECT COALESCE(SUM(w.saldo + w.saldoEnJuego), 0) FROM Wallet w")
+    Double totalFichasEnCirculacion();
 }
