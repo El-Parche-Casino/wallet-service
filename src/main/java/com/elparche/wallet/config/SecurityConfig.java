@@ -23,6 +23,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/wallet/admin/**").hasRole("ADMIN")
                         .requestMatchers(
                                 "/api/wallet/health",
                                 "/swagger-ui/**",
