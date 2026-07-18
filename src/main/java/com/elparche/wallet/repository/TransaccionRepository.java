@@ -12,6 +12,8 @@ public interface TransaccionRepository extends JpaRepository<Transaccion, Long> 
 
     long countByFechaHoraGreaterThanEqual(LocalDateTime desde);
 
+    List<Transaccion> findAllByOrderByFechaHoraDesc(org.springframework.data.domain.Pageable pageable);
+
     List<Transaccion> findByUsernameOrderByFechaHoraDesc(String username);
 
     List<Transaccion> findByUsernameAndJuegoTipoOrderByFechaHoraDesc(
