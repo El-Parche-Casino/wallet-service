@@ -35,6 +35,9 @@ public class Wallet {
     @Builder.Default
     private Boolean activo = true;
 
+    @Column(name = "ultimo_reclamo_diario")
+    private LocalDateTime ultimoReclamoDiario;
+
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

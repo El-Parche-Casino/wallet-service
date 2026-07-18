@@ -11,13 +11,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class WalletService {
+
+    private static final double RECOMPENSA_DIARIA = 1000.0;
+    private static final Duration COOLDOWN_RECLAMO = Duration.ofHours(24);
 
     private final WalletRepository walletRepository;
     private final TransaccionRepository transaccionRepository;
@@ -133,6 +138,58 @@ public class WalletService {
                 .saldo(wallet.getSaldo())
                 .saldoEnJuego(wallet.getSaldoEnJuego())
                 .mensaje("Apuesta devuelta exitosamente")
+                .build();
+    }
+
+    public Map<String, Object> estadoRecompensa(String username) {
+        Wallet wallet = obtenerOCrearWallet(username);
+        long segundosRestantes = segundosParaReclamo(wallet);
+        return Map.of(
+                "disponible", segundosRestantes == 0,
+                "segundosRestantes", segundosRestantes);
+    }
+
+    private long segundosParaReclamo(Wallet wallet) {
+        if (wallet.getUltimoReclamoDiario() == null) return 0;
+        LocalDateTime disponibleEn = wallet.getUltimoReclamoDiario().plus(COOLDOWN_RECLAMO);
+        long segundos = Duration.between(LocalDateTime.now(), disponibleEn).getSeconds();
+        return Math.max(0, segundos);
+    }
+
+    @Transactional
+    public WalletResponse reclamarRecompensaDiaria(String username) {
+        Wallet wallet = obtenerOCrearWallet(username);
+        long restante = segundosParaReclamo(wallet);
+        if (restante > 0) {
+            long horas = restante / 3600;
+            long minutos = (restante % 3600) / 60;
+            throw new RuntimeException("Ya reclamaste tu recompensa diaria. Disponible en "
+                    + horas + "h " + minutos + "m");
+        }
+
+        Double saldoAntes = wallet.getSaldo();
+        wallet.setSaldo(wallet.getSaldo() + RECOMPENSA_DIARIA);
+        wallet.setUltimoReclamoDiario(LocalDateTime.now());
+        wallet.setUpdatedAt(LocalDateTime.now());
+        walletRepository.save(wallet);
+
+        Transaccion transaccion = Transaccion.builder()
+                .username(username)
+                .tipo(Transaccion.TipoTransaccion.RECARGA)
+                .monto(RECOMPENSA_DIARIA)
+                .saldoAntes(saldoAntes)
+                .saldoDespues(wallet.getSaldo())
+                .descripcion("Recompensa diaria")
+                .salaId("CASINO")
+                .juegoTipo("CASINO")
+                .build();
+        transaccionRepository.save(transaccion);
+
+        return WalletResponse.builder()
+                .username(wallet.getUsername())
+                .saldo(wallet.getSaldo())
+                .saldoEnJuego(wallet.getSaldoEnJuego())
+                .mensaje("Recompensa diaria reclamada exitosamente")
                 .build();
     }
 

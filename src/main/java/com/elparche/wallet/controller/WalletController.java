@@ -73,6 +73,44 @@ public class WalletController {
     }
 
     @Operation(
+            summary = "Estado de la recompensa diaria",
+            description = "Indica si el jugador puede reclamar la recompensa diaria de 1000 fichas " +
+                    "y cuántos segundos faltan si aún no puede.",
+            security = @SecurityRequirement(name = "Bearer Authentication")
+    )
+    @GetMapping("/recompensa/{username}")
+    public ResponseEntity<?> estadoRecompensa(
+            @PathVariable String username,
+            org.springframework.security.core.Authentication auth) {
+        if (auth == null || !username.equals(auth.getName())) {
+            return ResponseEntity.status(403).body(
+                    java.util.Map.of("error", "Solo puedes consultar tu propia recompensa"));
+        }
+        return ResponseEntity.ok(walletService.estadoRecompensa(username));
+    }
+
+    @Operation(
+            summary = "Reclamar recompensa diaria",
+            description = "Acredita 1000 fichas si han pasado 24 horas desde el último reclamo. " +
+                    "Si no, responde 400 con el tiempo restante.",
+            security = @SecurityRequirement(name = "Bearer Authentication")
+    )
+    @PostMapping("/recompensa/{username}/reclamar")
+    public ResponseEntity<?> reclamarRecompensa(
+            @PathVariable String username,
+            org.springframework.security.core.Authentication auth) {
+        if (auth == null || !username.equals(auth.getName())) {
+            return ResponseEntity.status(403).body(
+                    java.util.Map.of("error", "Solo puedes reclamar tu propia recompensa"));
+        }
+        try {
+            return ResponseEntity.ok(walletService.reclamarRecompensaDiaria(username));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    @Operation(
             summary = "Health check",
             description = "Verifica que el wallet-service esté corriendo correctamente."
     )
